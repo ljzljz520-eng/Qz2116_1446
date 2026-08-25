@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "metrics": {
+    "production_loc": 2355,
+    "production_files": 21,
+    "production_packages": 12,
+    "test_files": 11,
+    "production_functions": 113,
+    "decision_points": 134
+  },
+  "persistence": {
+    "module": "go.etcd.io/bbolt",
+    "entities": ["Record", "User", "Event", "Audit"],
+    "reopen_test": "TestPersistenceSurvivesReopen"
+  },
+  "workflows": [
+    {"steps": ["接收", "校验", "保存", "展示"], "test": "TestWorkflowOne"},
+    {"steps": ["登记", "审核", "归档", "查询"], "test": "TestWorkflowTwo"},
+    {"steps": ["提交", "处理", "通知", "追踪"], "test": "TestWorkflowThree"}
+  ]
+}
