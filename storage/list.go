@@ -27,34 +27,29 @@ func list[T any](s *Store, b string) ([]T, error) {
 	return out, e
 }
 func (s *Store) Records() ([]model.Record, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if s.db == nil {
 		return nil, bbolt.ErrDatabaseNotOpen
 	}
-	if !s.cacheLoaded {
-		var v []model.Record
-		e := s.db.View(func(tx *bbolt.Tx) error {
-			return tx.Bucket([]byte("records")).ForEach(func(_, data []byte) error {
-				var r model.Record
-				if err := json.Unmarshal(data, &r); err != nil {
-					return err
-				}
-				v = append(v, r)
-				return nil
-			})
+	// Always read the authoritative bucket state so the display path reflects
+	// the most recent Progress written by SaveRecord. A write-through cache that
+	// is loaded once and never invalidated would otherwise show stale Progress
+	// after a status advance (e.g. viewing by remainder after the record moved
+	// from "new" to "validated").
+	var v []model.Record
+	e := s.db.View(func(tx *bbolt.Tx) error {
+		return tx.Bucket([]byte("records")).ForEach(func(_, data []byte) error {
+			var r model.Record
+			if err := json.Unmarshal(data, &r); err != nil {
+				return err
+			}
+			v = append(v, r)
+			return nil
 		})
-		if e != nil {
-			return v, e
-		}
-		for _, r := range v {
-			s.recordCache[r.ID] = r
-		}
-		s.cacheLoaded = true
-	}
-	v := make([]model.Record, 0, len(s.recordCache))
-	for _, r := range s.recordCache {
-		v = append(v, r)
+	})
+	if e != nil {
+		return v, e
 	}
 	sort.Slice(v, func(i, j int) bool { return v[i].ID < v[j].ID })
 	return v, nil
