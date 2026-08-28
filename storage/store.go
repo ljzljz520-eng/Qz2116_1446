@@ -13,11 +13,9 @@ import (
 var buckets = []string{"records", "users", "events", "audits"}
 
 type Store struct {
-	db          *bbolt.DB
-	mu          sync.RWMutex
-	path        string
-	recordCache map[uint64]model.Record
-	cacheLoaded bool
+	db   *bbolt.DB
+	mu   sync.RWMutex
+	path string
 }
 
 func Open(path string) (*Store, error) {
@@ -25,7 +23,7 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Store{db: db, path: path, recordCache: make(map[uint64]model.Record)}
+	s := &Store{db: db, path: path}
 	err = db.Update(func(tx *bbolt.Tx) error {
 		for _, n := range buckets {
 			if _, e := tx.CreateBucketIfNotExists([]byte(n)); e != nil {
